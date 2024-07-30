@@ -91,12 +91,12 @@ local function render_clipboard_items()
     local first_line_virt = {}
     local rest_lines_virt = {}
 
-    local first_line = #lines[1] > popup.line_width and string.sub(lines[1], 1, popup.line_width)
+    local first_line = #lines[1] > popup.line_width and lines[1]:sub(1, popup.line_width)
       or lines[1]
 
     if #lines == 2 and lines[2] == "" and user_config.special_symbols then
       local first_line_with_arrow = #first_line + 3 > popup.line_width
-          and string.sub(first_line, 1, popup.line_width - 3)
+          and first_line:sub(1, popup.line_width - 3)
         or first_line
 
       first_line_virt = { { first_line_with_arrow, "Normal" }, { " 󰌑", "Special" } }
@@ -106,19 +106,16 @@ local function render_clipboard_items()
 
     if #lines > 1 and lines[2] ~= "" and user_config.special_symbols then
       for j = 2, #lines do
-        local line = #lines[j] > popup.line_width and string.sub(lines[j], 1, popup.line_width)
-          or lines[j]
+        local line = #lines[j] > popup.line_width and lines[j]:sub(1, popup.line_width) or lines[j]
 
         if j >= user_config.max_item_length then
-          local line_with_dots = #line + 3 > popup.line_width
-              and string.sub(line, 1, popup.line_width - 3)
+          local line_with_dots = #line + 3 > popup.line_width and line:sub(1, popup.line_width - 3)
             or line
 
           table.insert(rest_lines_virt, { { line_with_dots, "Normal" }, { " ", "Special" } })
           break
         elseif j + 1 == #lines and lines[j + 1] == "" and user_config.special_symbols then
-          local line_with_arrow = #line + 3 > popup.line_width
-              and string.sub(line, 1, popup.line_width - 3)
+          local line_with_arrow = #line + 3 > popup.line_width and line:sub(1, popup.line_width - 3)
             or line
 
           table.insert(rest_lines_virt, { { line_with_arrow, "Normal" }, { " 󰌑", "Special" } })
@@ -129,11 +126,15 @@ local function render_clipboard_items()
       end
     end
 
-    if i < #clipboard_history then
-      table.insert(
-        rest_lines_virt,
-        { { string.rep(user_config.item_separator, popup.line_width), "LineNr" } }
-      )
+    if i < #clipboard_history and user_config.item_separator ~= "" then
+      table.insert(rest_lines_virt, {
+        {
+          user_config.item_separator
+            :rep(math.ceil(popup.line_width / #user_config.item_separator))
+            :sub(1, popup.line_width),
+          "LineNr",
+        },
+      })
     end
 
     vim.api.nvim_buf_set_extmark(popup.buf, popup.ns_id, i - 1, 0, {
@@ -288,7 +289,6 @@ local function create_user_commands()
   vim.api.nvim_create_user_command("ClipboardClear", function()
     M.clear_clipboard()
 
-    -- TODO: ska den verkligen autospara filen när man clearar???
     if user_config.autosave_history then
       M.save_clipboard()
     end
@@ -304,7 +304,8 @@ function M.setup(opts)
   user_config = vim.tbl_deep_extend("keep", opts or {}, default_config)
 
   -- User config assertions
-  assert(#user_config.item_separator == 1, "Item separator cannot be longer than one character.")
+  assert(user_config.max_item_length > 0, "max_item_length must be 1 or higher")
+  assert(user_config.history_size > 0, "history_size must be 1 or higher")
 
   -- Actual functionality
   create_user_commands()
