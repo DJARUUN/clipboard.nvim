@@ -303,6 +303,10 @@ function M.setup(opts)
   ---@type config
   user_config = vim.tbl_deep_extend("keep", opts or {}, default_config)
 
+  -- User config assertions
+  assert(#user_config.item_separator == 1, "Item separator cannot be longer than one character.")
+
+  -- Actual functionality
   create_user_commands()
 
   get_saved_clipboard_history()
