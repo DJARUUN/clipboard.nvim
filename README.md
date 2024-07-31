@@ -4,7 +4,7 @@
 
 A simple lua plugin that saves your yanks to a clipboard that persists between sessions.
 
-![](showcase/showcase.webm){width=100%}
+![](https://utfs.io/f/f8124cc1-c58b-4a72-98e5-54b13aedf937-5lgw9f.webm){width=100%}
 </div>
 
 ## 🧾 Table of Contents
