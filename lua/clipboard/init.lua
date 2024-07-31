@@ -153,32 +153,18 @@ local function remove_clipboard_item()
   end
 end
 
-local function paste_selected(opts)
+local function paste_selected()
   local line_nr, _ = unpack(vim.api.nvim_win_get_cursor(popup.win))
   local line_to_paste = clipboard_history[line_nr]
 
   close_popup()
 
-  if opts.range ~= 0 then
-    local start_pos = vim.fn.getpos("'<")
-    local end_pos = vim.fn.getpos("'>")
-
-    local start_line, start_col = start_pos[2], start_pos[3]
-    local end_line, end_col = end_pos[2], end_pos[3]
-
-    local mode = end_col == vim.v.maxcol and "V" or "v"
-
-    vim.cmd(("normal! %dG%d|%s%dG%d|"):format(start_line, start_col, mode, end_line, end_col))
-
-    vim.api.nvim_paste(line_to_paste, true, -1)
-  else
-    vim.api.nvim_paste(line_to_paste, true, -1)
-  end
+  vim.api.nvim_paste(line_to_paste, true, -1)
 end
 
-local function set_popup_keymaps(opts)
+local function set_popup_keymaps()
   vim.keymap.set("n", "<cr>", function()
-    paste_selected(opts)
+    paste_selected()
   end, { buffer = popup.buf })
 
   vim.keymap.set("n", "<esc>", close_popup, { buffer = popup.buf })
@@ -196,7 +182,7 @@ local function set_popup_autocmds()
   })
 end
 
-local function show_clipboard(opts)
+local function show_clipboard()
   if #clipboard_history > 0 then
     popup = {
       buf = vim.api.nvim_create_buf(false, true),
@@ -238,7 +224,7 @@ local function show_clipboard(opts)
 
     render_clipboard_items()
 
-    set_popup_keymaps(opts)
+    set_popup_keymaps()
     set_popup_autocmds()
   else
     print("Clipboard is empty.")
@@ -292,7 +278,7 @@ local function create_user_commands()
   vim.api.nvim_create_user_command(
     "Clipboard",
     show_clipboard,
-    { desc = "Open clipboard", nargs = 0, range = true }
+    { desc = "Open clipboard", nargs = 0 }
   )
 
   vim.api.nvim_create_user_command("ClipboardClear", function()
@@ -311,10 +297,6 @@ end
 function M.setup(opts)
   ---@type config
   user_config = vim.tbl_deep_extend("keep", opts or {}, default_config)
-
-  assert(#user_config.item_separator > 1, "item_separator cannot be more than one character")
-  assert(user_config.max_item_length > 0, "max_item_length must be 1 or higher")
-  assert(user_config.history_size > 0, "history_size must be 1 or higher")
 
   create_user_commands()
 
