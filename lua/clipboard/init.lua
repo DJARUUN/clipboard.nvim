@@ -1,7 +1,3 @@
--- TODO: se om det går att fixa så den pastear rätt i visual mode och pastear in i selectionen som den skulle normalt sätt
--- är för att den tappar selectionen när select rutan öppnas
--- ??? skaffa support för selection ranges '<,'> ???
-
 local M = {}
 
 ---Config class for clipboard.nvim
@@ -129,9 +125,7 @@ local function render_clipboard_items()
     if i < #clipboard_history and user_config.item_separator ~= "" then
       table.insert(rest_lines_virt, {
         {
-          user_config.item_separator
-            :rep(math.ceil(popup.line_width / #user_config.item_separator))
-            :sub(1, popup.line_width),
+          user_config.item_separator:rep(popup.line_width),
           "LineNr",
         },
       })
@@ -159,17 +153,32 @@ local function remove_clipboard_item()
   end
 end
 
-local function paste_selected()
+local function paste_selected(opts)
   local line_nr, _ = unpack(vim.api.nvim_win_get_cursor(popup.win))
+  local line_to_paste = clipboard_history[line_nr]
 
   close_popup()
 
-  vim.api.nvim_paste(clipboard_history[line_nr], true, -1)
+  if opts.range ~= 0 then
+    local start_pos = vim.fn.getpos("'<")
+    local end_pos = vim.fn.getpos("'>")
+
+    local start_line, start_col = start_pos[2], start_pos[3]
+    local end_line, end_col = end_pos[2], end_pos[3]
+
+    local mode = end_col == vim.v.maxcol and "V" or "v"
+
+    vim.cmd(("normal! %dG%d|%s%dG%d|"):format(start_line, start_col, mode, end_line, end_col))
+
+    vim.api.nvim_paste(line_to_paste, true, -1)
+  else
+    vim.api.nvim_paste(line_to_paste, true, -1)
+  end
 end
 
-local function set_popup_keymaps()
+local function set_popup_keymaps(opts)
   vim.keymap.set("n", "<cr>", function()
-    paste_selected()
+    paste_selected(opts)
   end, { buffer = popup.buf })
 
   vim.keymap.set("n", "<esc>", close_popup, { buffer = popup.buf })
@@ -187,7 +196,7 @@ local function set_popup_autocmds()
   })
 end
 
-local function show_clipboard()
+local function show_clipboard(opts)
   if #clipboard_history > 0 then
     popup = {
       buf = vim.api.nvim_create_buf(false, true),
@@ -229,7 +238,7 @@ local function show_clipboard()
 
     render_clipboard_items()
 
-    set_popup_keymaps()
+    set_popup_keymaps(opts)
     set_popup_autocmds()
   else
     print("Clipboard is empty.")
@@ -256,7 +265,7 @@ end
 
 ---# Clears the clipboard.
 ---
----Does not update the state file.
+---Does not update the state file automatically.
 function M.clear_clipboard()
   clipboard_history = {}
 end
@@ -283,7 +292,7 @@ local function create_user_commands()
   vim.api.nvim_create_user_command(
     "Clipboard",
     show_clipboard,
-    { desc = "Open clipboard", nargs = 0 }
+    { desc = "Open clipboard", nargs = 0, range = true }
   )
 
   vim.api.nvim_create_user_command("ClipboardClear", function()
@@ -303,11 +312,10 @@ function M.setup(opts)
   ---@type config
   user_config = vim.tbl_deep_extend("keep", opts or {}, default_config)
 
-  -- User config assertions
+  assert(#user_config.item_separator > 1, "item_separator cannot be more than one character")
   assert(user_config.max_item_length > 0, "max_item_length must be 1 or higher")
   assert(user_config.history_size > 0, "history_size must be 1 or higher")
 
-  -- Actual functionality
   create_user_commands()
 
   get_saved_clipboard_history()
