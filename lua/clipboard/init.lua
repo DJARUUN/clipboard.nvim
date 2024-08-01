@@ -1,5 +1,13 @@
 local M = {}
 
+---Class for clipboard.nvim window highlight groups
+---@class highlights
+---@field normal string Regular text.
+---@field special string Special symbols, e.g. the trailing newline symbol.
+---@field border string The window border.
+---@field title string The window title.
+---@field item_separator string The separator between clipboard items.
+
 ---Config class for clipboard.nvim
 ---@class config
 ---@field autosave_history boolean Whether the clipboard should be automatically saved to a file to persist between sessions.
@@ -7,12 +15,22 @@ local M = {}
 ---@field max_item_length integer The max amount of lines to show of each item in the clipboard.
 ---@field item_separator string The character to use for the separator between clipboard items. Should never be more than one character.
 ---@field special_symbols boolean Whether to show special symbols, e.g. the symbols for trailing newlines.
+---@field border string|table<string> The border of the popup window. This can either be any of the builtin styles, e.g. "rounded", or a custom border in form of a table of each border character. Check out `:h nvim_open_win()` for the exact specification.
+---@field highlights highlights The highlight groups for the clipboard window.
 local default_config = {
   autosave_history = true,
   history_size = 50,
   max_item_length = 4,
   item_separator = "─",
   special_symbols = true,
+  border = "rounded",
+  highlights = {
+    normal = "Normal",
+    special = "Special",
+    border = "FloatermBorder",
+    title = "texCmdTitle",
+    item_separator = "LineNr",
+  },
 }
 
 ---@type config
@@ -94,9 +112,12 @@ local function render_clipboard_items()
           and first_line:sub(1, popup.line_width - 3)
         or first_line
 
-      first_line_virt = { { first_line_with_arrow, "Normal" }, { " 󰌑", "Special" } }
+      first_line_virt = {
+        { first_line_with_arrow, user_config.highlights.normal },
+        { " 󰌑", user_config.highlights.special },
+      }
     else
-      first_line_virt = { { first_line, "Normal" } }
+      first_line_virt = { { first_line, user_config.highlights.normal } }
     end
 
     if #lines > 1 and lines[2] ~= "" and user_config.special_symbols then
@@ -107,16 +128,22 @@ local function render_clipboard_items()
           local line_with_dots = #line + 3 > popup.line_width and line:sub(1, popup.line_width - 3)
             or line
 
-          table.insert(rest_lines_virt, { { line_with_dots, "Normal" }, { " ", "Special" } })
+          table.insert(rest_lines_virt, {
+            { line_with_dots, user_config.highlights.normal },
+            { " ", user_config.highlights.special },
+          })
           break
         elseif j + 1 == #lines and lines[j + 1] == "" and user_config.special_symbols then
           local line_with_arrow = #line + 3 > popup.line_width and line:sub(1, popup.line_width - 3)
             or line
 
-          table.insert(rest_lines_virt, { { line_with_arrow, "Normal" }, { " 󰌑", "Special" } })
+          table.insert(rest_lines_virt, {
+            { line_with_arrow, user_config.highlights.normal },
+            { " 󰌑", user_config.highlights.special },
+          })
           break
         else
-          table.insert(rest_lines_virt, { { line, "Normal" } })
+          table.insert(rest_lines_virt, { { line, user_config.highlights.normal } })
         end
       end
     end
@@ -125,7 +152,7 @@ local function render_clipboard_items()
       table.insert(rest_lines_virt, {
         {
           user_config.item_separator:rep(popup.line_width),
-          "LineNr",
+          user_config.highlights.item_separator,
         },
       })
     end
@@ -207,7 +234,7 @@ local function show_clipboard(opts)
       width = popup.width,
       height = popup.height,
       relative = "win",
-      border = "rounded",
+      border = user_config.border,
       style = "minimal",
       anchor = "NW",
       col = (vim.o.columns - popup.width) / 2,
@@ -218,7 +245,12 @@ local function show_clipboard(opts)
 
     vim.api.nvim_set_option_value(
       "winhl",
-      "Normal:Normal,FloatBorder:FloatermBorder,CursorLine:Normal,FloatTitle:texCmdTitle",
+      ("Normal:%s,FloatBorder:%s,CursorLine:%s,FloatTitle:%s"):format(
+        user_config.highlights.normal,
+        user_config.highlights.border,
+        user_config.highlights.normal,
+        user_config.highlights.title
+      ),
       { win = popup.win }
     )
 

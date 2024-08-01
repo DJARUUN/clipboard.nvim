@@ -74,19 +74,19 @@ Do `<leader>sc` (or whatever keymap you set, if any) or `:Clipboard` to open the
 
 This will open a popup window that shows the clipboard history in order from newest to oldest. Use `<CR>` to paste the selected entry at the cursor or selection, `X` to remove the selected entry or `<ESC>` to close the window.
 
-## 🔧 Configuration 
+## 🔧 Configuration
 
 This is the default config. If you are fine with the defaults you don't need to do anything here. Just call the `setup` function without any arguments or leave the `opts` table empty (if you're using lazy.nvim).
 
 ```lua
 require("clipboard").setup({
   ---@field boolean
-  -- Whether the clipboard should be automatically saved to a file to 
+  -- Whether the clipboard should be automatically saved to a file to
   -- persist between sessions.
   autosave_history = true,
 
   ---@field integer
-  -- The amount of items to save in the clipboard. Expect it to slow 
+  -- The amount of items to save in the clipboard. Expect it to slow
   -- down at high values.
   history_size = 50,
 
@@ -94,15 +94,32 @@ require("clipboard").setup({
   -- The max amount of lines to show of each item in the clipboard.
   max_item_length = 4,
 
-  ---@field string (max one character)
-  -- The character to use for the separator between clipboard items. 
+  ---@field string
+  -- The character to use for the separator between clipboard items.
   -- Should never be more than one character.
   item_separator = "─",
 
   ---@field boolean
-  -- Whether to show special symbols, e.g. the symbols for trailing 
+  -- Whether to show special symbols, e.g. the symbols for trailing
   -- newlines.
   special_symbols = true,
+
+  ---@field string|table<string>
+  -- The border of the popup window. This can either be any of the
+  -- builtin styles, e.g. "rounded", or a custom border in form of
+  -- a table of each border character. Check out
+  -- `:h nvim_open_win()` for the exact specification.
+  border = "rounded",
+
+  ---@field highlights
+  -- The highlight groups for the clipboard window.
+  highlights = {
+    normal = "Normal",
+    special = "Special",
+    border = "FloatermBorder",
+    title = "texCmdTitle",
+    item_separator = "LineNr",
+  },
 })
 ```
 
