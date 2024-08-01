@@ -3,11 +3,10 @@ local M = {}
 ---Config class for clipboard.nvim
 ---@class config
 ---@field autosave_history boolean Whether the clipboard should be automatically saved to a file to persist between sessions.
----@field history_size integer The Amount of items to save in the clipboard. Expect it to slow down at high values.
+---@field history_size integer The amount of items to save in the clipboard. Expect it to slow down at high values.
 ---@field max_item_length integer The max amount of lines to show of each item in the clipboard.
 ---@field item_separator string The character to use for the separator between clipboard items. Should never be more than one character.
 ---@field special_symbols boolean Whether to show special symbols, e.g. the symbols for trailing newlines.
----@field item_numbers boolean Whether to show the item indices in the clipboard.
 local default_config = {
   autosave_history = true,
   history_size = 50,
@@ -153,18 +152,30 @@ local function remove_clipboard_item()
   end
 end
 
-local function paste_selected()
+local function paste_selected(opts)
   local line_nr, _ = unpack(vim.api.nvim_win_get_cursor(popup.win))
   local line_to_paste = clipboard_history[line_nr]
 
   close_popup()
 
+  if opts.range ~= 0 then
+    local start_pos = vim.fn.getpos("'<")
+    local end_pos = vim.fn.getpos("'>")
+
+    local start_line, start_col = start_pos[2], start_pos[3]
+    local end_line, end_col = end_pos[2], end_pos[3]
+
+    local mode = end_col == vim.v.maxcol and "V" or "v"
+
+    vim.cmd(("normal! %dG%d|%s%dG%d|"):format(start_line, start_col, mode, end_line, end_col))
+  end
+
   vim.api.nvim_paste(line_to_paste, true, -1)
 end
 
-local function set_popup_keymaps()
+local function set_popup_keymaps(opts)
   vim.keymap.set("n", "<cr>", function()
-    paste_selected()
+    paste_selected(opts)
   end, { buffer = popup.buf })
 
   vim.keymap.set("n", "<esc>", close_popup, { buffer = popup.buf })
@@ -182,7 +193,7 @@ local function set_popup_autocmds()
   })
 end
 
-local function show_clipboard()
+local function show_clipboard(opts)
   if #clipboard_history > 0 then
     popup = {
       buf = vim.api.nvim_create_buf(false, true),
@@ -224,7 +235,7 @@ local function show_clipboard()
 
     render_clipboard_items()
 
-    set_popup_keymaps()
+    set_popup_keymaps(opts)
     set_popup_autocmds()
   else
     print("Clipboard is empty.")
@@ -259,16 +270,16 @@ end
 ---- PLUGIN SETUP -----------------------------------------------------------------------------
 
 local function create_autocmds()
-  local clipboard_augroup = vim.api.nvim_create_augroup("Clipboard", { clear = true })
+  local augroup = vim.api.nvim_create_augroup("Clipboard", { clear = true })
 
   vim.api.nvim_create_autocmd("TextYankPost", {
-    group = clipboard_augroup,
+    group = augroup,
     callback = update_clipboard_history,
   })
 
   if user_config.autosave_history then
     vim.api.nvim_create_autocmd("VimLeavePre", {
-      group = clipboard_augroup,
+      group = augroup,
       callback = M.save_clipboard,
     })
   end
@@ -278,7 +289,7 @@ local function create_user_commands()
   vim.api.nvim_create_user_command(
     "Clipboard",
     show_clipboard,
-    { desc = "Open clipboard", nargs = 0 }
+    { desc = "Open clipboard", nargs = 0, range = true }
   )
 
   vim.api.nvim_create_user_command("ClipboardClear", function()
@@ -297,6 +308,10 @@ end
 function M.setup(opts)
   ---@type config
   user_config = vim.tbl_deep_extend("keep", opts or {}, default_config)
+
+  assert(#user_config.item_separator > 1, "item_separator cannot be more than one character")
+  assert(user_config.max_item_length > 0, "max_item_length must be 1 or higher")
+  assert(user_config.history_size > 0, "history_size must be 1 or higher")
 
   create_user_commands()
 
