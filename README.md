@@ -147,4 +147,4 @@ require("clipboard").clear_clipboard()
 
 ## 💫 Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=clipboard.nvim/clipboard.nvim,djaruun/clipboard.nvim&type=Date&theme=dark)](https://star-history.com/#clipboard.nvim/clipboard.nvim&djaruun/clipboard.nvim&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=djaruun/clipboard.nvim&type=Date&theme=dark)](https://star-history.com/#djaruun/clipboard.nvim&Date)
