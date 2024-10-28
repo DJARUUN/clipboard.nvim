@@ -21,7 +21,7 @@ clipboard.nvim supports all the usual plugin managers
 
 ```lua
 {
-  "https://gitlab.com/djaruun/clipboard.nvim.git",
+  "djaruun/clipboard.nvim",
   opts = {},
 }
 ```
@@ -32,7 +32,7 @@ clipboard.nvim supports all the usual plugin managers
 
 ```lua
 use({
-   "https://gitlab.com/djaruun/clipboard.nvim.git",
+   "djaruun/clipboard.nvim",
    config = function()
    require("clipboard").setup()
    end,
