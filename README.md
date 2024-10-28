@@ -49,7 +49,7 @@ The default configurations above is all you need to make the plugin work, but ke
 
 ```lua
 {
-  "https://gitlab.com/djaruun/clipboard.nvim.git",
+  "djaruun/clipboard.nvim",
   opts = {},
   keys = {
     {
