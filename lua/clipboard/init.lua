@@ -168,7 +168,7 @@ local function render_clipboard_items()
 end
 
 local function remove_clipboard_item()
-  local line_nr, _ = unpack(vim.api.nvim_win_get_cursor(popup.win))
+  local line_nr, _ = (table.unpack or unpack)(vim.api.nvim_win_get_cursor(popup.win))
 
   table.remove(clipboard_history, line_nr)
 
@@ -180,12 +180,12 @@ local function remove_clipboard_item()
 end
 
 local function paste_selected(opts)
-  local line_nr, _ = unpack(vim.api.nvim_win_get_cursor(popup.win))
+  local line_nr, _ = (table.unpack or unpack)(vim.api.nvim_win_get_cursor(popup.win))
   local line_to_paste = clipboard_history[line_nr]
 
   close_popup()
 
-  if opts.range ~= 0 then
+  if opts and opts.range ~= 0 then
     local start_pos = vim.fn.getpos("'<")
     local end_pos = vim.fn.getpos("'>")
 
